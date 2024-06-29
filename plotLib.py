@@ -19,16 +19,11 @@ FORCE_PROPERTY_ARRAY = {
     'tz': {'title': 'Torque-Displacement Plot (Tz)', 'ylim': (-2, 14), 'ylabel': 'Torque (Nmm)', 'smooth_elements': 25, 'negate': False}
 }
 
-def get_folder_listing(folder_path):
+def get_folder_listing(folder_path, include_needle_number_bool=True):
     """Retrieve a list of unique sample names from CSV files in the specified directory."""
     all_files = glob.glob(os.path.join(folder_path, "*.csv"))
-    sample_names = {"_".join(os.path.basename(file).split("_")[:4]) for file in all_files}
-    return sorted(sample_names)
-
-def get_folder_listing_without_needle(folder_path):
-    """Retrieve a list of unique sample names from CSV files in the specified directory."""
-    all_files = glob.glob(os.path.join(folder_path, "*.csv"))
-    sample_names = {"_".join(os.path.basename(file).split("_")[:3]) for file in all_files}
+    num_elements = 4 if include_needle_number_bool else 3
+    sample_names = {"_".join(os.path.basename(file).split("_")[:num_elements]) for file in all_files}
     return sorted(sample_names)
 
 def separate_needles_dialog():
@@ -36,20 +31,15 @@ def separate_needles_dialog():
     reply = QMessageBox.question(None, "Separate Needles", "Do you want to handle needle samples separately?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
     return reply == QMessageBox.StandardButton.Yes
 
-def get_sample_name_dialog(all_files):
-    """Prompt user to select a sample name for processing."""
-    sample_name, ok = QInputDialog.getItem(None, "Input Dialog", "Select a sample name:", all_files, 0, False)
-    if not ok:
-        raise ValueError("No sample name selected.")
-    return sample_name
-
-def get_sample_names_dialog(all_files):
+def get_sample_names_dialog(all_files, multiple_samples=True):
     """Prompt user to select sample names for processing."""
     sample_names = []
     while all_files:
         sample_name, ok = QInputDialog.getItem(None, "Input Dialog", "Select a sample name:", all_files, 0, False)
         if not ok:
             break
+        if not multiple_samples:
+            return sample_name
         sample_names.append(sample_name)
         all_files.remove(sample_name)
         reply = QMessageBox.question(None, "Message", "Do you want to add another sample name?", QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
@@ -141,63 +131,69 @@ def find_retraction_maxima(force_smooth, max_displacement_index):
 
 def linear_regression(displacement, force_smooth, peak_indices, r_squared_threshold):
     """Perform linear regression and check R-squared value."""
-    first_peak_index = peak_indices[0]
-    if first_peak_index > 200:
-        for i in range(first_peak_index - 200, 0, -1):
-            X = displacement[i:first_peak_index + 1].reshape(-1, 1)
-            y = force_smooth[i:first_peak_index + 1]
-            model = LinearRegression().fit(X, y)
-            y_pred = model.predict(X)
-            r_squared = r2_score(y, y_pred)
+    if len(peak_indices) > 0:
+        first_peak_index = peak_indices[0]
+        if first_peak_index > 200:
+            for i in range(first_peak_index - 200, 0, -1):
+                X = displacement[i:first_peak_index + 1].reshape(-1, 1)
+                y = force_smooth[i:first_peak_index + 1]
+                model = LinearRegression().fit(X, y)
+                y_pred = model.predict(X)
+                r_squared = r2_score(y, y_pred)
 
-            if r_squared < r_squared_threshold:
-                return X, y_pred, model.coef_[0]
+                if r_squared < r_squared_threshold:
+                    return X, y_pred, model.coef_[0]
+    return np.array([]), np.array([]), np.nan
 
 def get_final_insertion_value(displacement, force_smooth):
     max_displacement_index = np.argmax(displacement)
     return max_displacement_index, force_smooth[max_displacement_index]
 
-def calculate_force_metrics(displacement, force_smooth):
+def calculate_force_metrics(displacement, force_smooth, distance_height_prominence = (250, 1.5, 0.5)):
     """Calculate metrics from the force and displacement data."""
     max_displacement_index, final_insertion_force = get_final_insertion_value(displacement, force_smooth)
-    peak_indices = find_insertion_peaks(force_smooth, max_displacement_index, distance=150, height=1.5, prominence=0.5)
+    # peak_indices = find_insertion_peaks(force_smooth, max_displacement_index, distance=150, height=1.5, prominence=0.5)
+    peak_indices = find_insertion_peaks(force_smooth, max_displacement_index, *distance_height_prominence)
     X, y_pred, gradient = linear_regression(displacement, force_smooth, peak_indices, 0.98)
 
     print(f"Peaks found at indices: {peak_indices}")
+
     peak_locations = displacement[peak_indices]
     peak_heights = force_smooth[peak_indices]
 
-    peak_1_location = peak_locations[0] if len(peak_locations) > 0 else np.nan
-    peak_1_height = peak_heights[0] if len(peak_heights) > 0 else np.nan
-    peak_2_location = peak_locations[1] if len(peak_locations) > 1 else np.nan
-    peak_2_height = peak_heights[1] if len(peak_heights) > 1 else np.nan
+    peak_1_location, peak_1_index, peak_1_height = (peak_locations[0], peak_indices[0], peak_heights[0]) if len(peak_indices) > 0 else (np.nan, np.nan, np.nan)
+    peak_2_location, peak_2_index, peak_2_height = (peak_locations[1], peak_indices[1], peak_heights[1]) if len(peak_indices) > 1 else (np.nan, np.nan, np.nan)
 
-    return X, y_pred, gradient, final_insertion_force, peak_1_location, peak_1_height, peak_2_location, peak_2_height
+    return X, y_pred, gradient, final_insertion_force, peak_1_index, peak_1_height, peak_2_index, peak_2_height
 
-def calculate_torque_metrics(displacement, force_smooth):
+def calculate_torque_metrics(displacement, force_smooth, distance_height_prominence = ([],[],[])):
     """Calculate metrics from the torque and displacement data."""
     max_displacement_index, final_insertion_torque = get_final_insertion_value(displacement, force_smooth)
-    peak_indices = find_insertion_peaks(force_smooth, max_displacement_index, distance=150, height=final_insertion_torque / 4, prominence=0.05)
+    if distance_height_prominence == ([],[],[]):
+        peak_indices = find_insertion_peaks(force_smooth, max_displacement_index, distance=150, height=final_insertion_torque / 4, prominence=0.05)
+    else:
+        peak_indices = find_insertion_peaks(force_smooth, max_displacement_index, *distance_height_prominence)
     retraction_max_index = find_retraction_maxima(force_smooth, max_displacement_index)
-    peak_indices = np.append(peak_indices[0], retraction_max_index)
-
+    peak_indices = [peak_indices[0] if len(peak_indices) > 0 else np.nan, retraction_max_index]
+    
     print(f"Peaks found at indices: {peak_indices}")
-    peak_locations = displacement[peak_indices]
-    peak_heights = force_smooth[peak_indices]
 
-    peak_1_location = peak_locations[0] if len(peak_locations) > 0 else np.nan
-    peak_1_height = peak_heights[0] if len(peak_heights) > 0 else np.nan
-    peak_2_location = peak_locations[1] if len(peak_locations) > 1 else np.nan
-    peak_2_height = peak_heights[1] if len(peak_heights) > 1 else np.nan
+    peak_locations = [displacement[int(idx)] if not np.isnan(idx) else np.nan for idx in peak_indices]
+    peak_heights = [force_smooth[int(idx)] if not np.isnan(idx) else np.nan for idx in peak_indices]
 
-    return final_insertion_torque, peak_1_location, peak_1_height, peak_2_location, peak_2_height
+    peak_1_location, peak_1_index, peak_1_height = (peak_locations[0], peak_indices[0], peak_heights[0]) if len(peak_indices) > 0 else (np.nan, np.nan, np.nan)
+    peak_2_location, peak_2_index, peak_2_height = (peak_locations[1], peak_indices[1], peak_heights[1]) if len(peak_indices) > 1 else (np.nan, np.nan, np.nan)
 
-def plot_peaks(peak_1_location, peak_1_height, peak_2_location, peak_2_height):
+    return final_insertion_torque, peak_1_index, peak_1_height, peak_2_index, peak_2_height
+
+def plot_peaks(peak_1_location, peak_1_height, peak_2_location, peak_2_height, force_name):
     """Highlight and annotate the main peaks in the plot."""
+    units = "N" if force_name.startswith('f') else "Nmm"
+    peak_name = "Peak 2" if force_name.startswith('f') else "Retraction Max"
     plt.plot(peak_1_location, peak_1_height, "x", color='black')
-    plt.annotate(f'Peak 1: {peak_1_location:.1f} mm', (peak_1_location, peak_1_height), textcoords="offset points", xytext=(0, 10), ha='center')
+    plt.annotate(f'Peak 1: {peak_1_height:.1f} {units}', (peak_1_location, peak_1_height), textcoords="offset points", xytext=(0, 10), ha='center')
     plt.plot(peak_2_location, peak_2_height, "x", color='black')
-    plt.annotate(f'Peak 2: {peak_2_location:.1f} mm', (peak_2_location, peak_2_height), textcoords="offset points", xytext=(0, 10), ha='center')
+    plt.annotate(f'{peak_name}: {peak_2_height:.1f} {units}', (peak_2_location, peak_2_height), textcoords="offset points", xytext=(0, 10), ha='center')
 
 def plot_regression(X, y_pred, color):
     """Plot the linear regression line."""
@@ -299,7 +295,6 @@ def save_metric_single_samples(files, sample_name, force_name, sample_data):
             'Velocity (mm/s)': [sample_name.split('_')[1]] * len(sample_numbers),
             'Angle (degrees)': [sample_name.split('_')[2]] * len(sample_numbers),
             'Needle': [sample_name.split('_')[3]] * len(sample_numbers),
-            'Gradient (Nmm/mm)': [sd[0] for sd in sample_data],
             'Final Insertion Torque (Nmm)': [sd[1] for sd in sample_data],
             'Peak 1 Location (mm)': [sd[2] for sd in sample_data],
             'Peak 1 Height (Nmm)': [sd[3] for sd in sample_data],
@@ -329,11 +324,37 @@ def get_metadata_without_needle(sample_name):
     return sample, velocity, angle
 
 def trim_and_average_regression_data(X, y_pred):
-    """Trim the regression data to the minimum length."""
-    min_length = min(len(x) for x in X)
-    X = [x[:min_length] for x in X]
-    y_pred = [y[:min_length] for y in y_pred]
-    return np.mean(X, axis=0), np.mean(y_pred, axis=0)
+    """Trim the regression data to the minimum length and average them."""
+    X = [x for x in X if len(x) > 0]
+    y_pred = [y for y in y_pred if len(y) > 0]
+    if len(X) > 0 and len(y_pred) > 0:
+        min_length = min(len(x) for x in X)
+        X = [x[:min_length] for x in X]
+        y_pred = [y[:min_length] for y in y_pred]
+        return np.mean(X, axis=0), np.mean(y_pred, axis=0)
+    return np.array([]), np.array([])
+
+def filter_and_average_sample_data(sample_data):
+    mean_row, std_row = [], []
+    for j in range(6):
+        valid_values = [sample_data[i][j] for i in range(len(sample_data)) if j < len(sample_data[i]) and not np.isnan(sample_data[i][j])]
+        mean_metric = np.mean(valid_values) if len(valid_values) > 0 else np.nan
+        std_metric = np.std(valid_values) if len(valid_values) > 0 else np.nan
+        mean_row.append(mean_metric)
+        std_row.append(std_metric)
+    return mean_row, std_row
+
+def filter_and_average_peak_data(sample_data):
+    """Filter out NaN values from the peak data."""
+    peak_1_locations = [sample_data[i][2] for i in range(len(sample_data)) if not np.isnan(sample_data[i][2])]
+    peak_1_location = np.mean(peak_1_locations) if len(peak_1_locations) > 0 else np.nan
+    peak_1_heights = [sample_data[i][3] for i in range(len(sample_data)) if not np.isnan(sample_data[i][3])]
+    peak_1_height = np.mean(peak_1_heights) if len(peak_1_heights) > 0 else np.nan
+    peak_2_locations = [sample_data[i][4] for i in range(len(sample_data)) if not np.isnan(sample_data[i][4])]
+    peak_2_location = np.mean(peak_2_locations) if len(peak_2_locations) > 0 else np.nan
+    peak_2_heights = [sample_data[i][5] for i in range(len(sample_data)) if not np.isnan(sample_data[i][5])]
+    peak_2_height = np.mean(peak_2_heights) if len(peak_2_heights) > 0 else np.nan
+    return peak_1_location, peak_1_height, peak_2_location, peak_2_height
 
 def calculate_mean_data_for_plot(displacements, forces):
     """Calculate the mean and standard deviation of the data."""

@@ -2,13 +2,15 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from PyQt6.QtWidgets import QApplication
-from plotLib import (FORCE_PROPERTY_ARRAY, get_folder_listing, get_sample_name_dialog, get_force_name_dialog, calculate_metrics_dialog, save_figure_dialog, plot_config, config_plot_legend, get_files, load_and_process_data_frames, get_color_from_palette, calculate_force_metrics, calculate_torque_metrics, plot_peaks, plot_regression, plot_line, save_figure, save_metric_single_samples)
+from plotLib import (FORCE_PROPERTY_ARRAY, get_folder_listing, get_sample_names_dialog, get_force_name_dialog, calculate_metrics_dialog, save_figure_dialog, plot_config, config_plot_legend, get_files, load_and_process_data_frames, get_color_from_palette, calculate_force_metrics, calculate_torque_metrics, plot_peaks, plot_regression, plot_line, save_figure, save_metric_single_samples)
 
 DATA_DIRECTORY = "C:\\Users\\menwst\\Documents\\Python\\NeedleInsertionApp\\output"
 FIGURE_SIZE = (10, 6)
 X_LIMIT = (0, 25)
 LEGEND_POSITION = (1.6, 1)
-SUBPLOT_ADJUST = 0.65
+SUBPLOT_WIDTH = 0.65
+
+'''Note: Y Limit is set in the FORCE_PROPERTY_ARRAY dictionary for consistency across all plots for each force component'''
 
 def main():
     app = QApplication(sys.argv)
@@ -16,7 +18,7 @@ def main():
     all_files = get_folder_listing(DATA_DIRECTORY)
 
     try:
-        sample_name = get_sample_name_dialog(all_files)
+        sample_name = get_sample_names_dialog(all_files, multiple_samples=False)
         force_name = get_force_name_dialog()
     except ValueError as e:
         print(e)
@@ -60,7 +62,7 @@ def main():
         plot_line(displacement, force, pd_data_frame['Sample'].iloc[0], color)
 
     print("Files used:\n" + "\n".join([file.split("\\")[-1] for file in files]))
-    fig = config_plot_legend(LEGEND_POSITION, SUBPLOT_ADJUST)
+    fig = config_plot_legend(LEGEND_POSITION, SUBPLOT_WIDTH)
     plt.show()
 
     if save_figure_dialog():
