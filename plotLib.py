@@ -356,6 +356,12 @@ def filter_and_average_peak_data(sample_data):
     peak_2_height = np.mean(peak_2_heights) if len(peak_2_heights) > 0 else np.nan
     return peak_1_location, peak_1_height, peak_2_location, peak_2_height
 
+def arrange_sample_data(mean_displacement, std_force, gradient, final_insertion_force, peak_1_index, peak_1_height, peak_2_index, peak_2_height):
+    """Arrange the sample data into a mean tuple and a std tuple then return."""
+    mean_sample_data = (gradient, final_insertion_force, mean_displacement[peak_1_index] if not np.isnan(peak_1_index) else np.nan, peak_1_height, mean_displacement[peak_2_index] if not np.isnan(peak_2_index) else np.nan, peak_2_height)
+    std_sample_data = (np.nan, std_force[np.argmax(mean_displacement)], np.nan, std_force[peak_1_index] if not np.isnan(peak_1_index) else np.nan, np.nan, std_force[peak_2_index] if not np.isnan(peak_2_index) else np.nan)
+    return mean_sample_data, std_sample_data
+
 def calculate_mean_data_for_plot(displacements, forces):
     """Calculate the mean and standard deviation of the data."""
     mean_displacement = np.mean(displacements, axis=0)

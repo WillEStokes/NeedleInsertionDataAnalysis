@@ -9,6 +9,7 @@ FIGURE_SIZE = (10, 6)
 X_LIMIT = (0, 25)
 LEGEND_POSITION = (1.6, 1)
 SUBPLOT_WIDTH = 0.65
+DISTANCE_HEIGHT_PROMINENCE = (200, 1.5, 0.5)
 
 '''Note: Y Limit is set in the FORCE_PROPERTY_ARRAY dictionary for consistency across all plots for each force component'''
 
@@ -48,7 +49,7 @@ def main():
 
         if calculate_metrics_bool:
             if force_name.startswith('f'):
-                X, y_pred, gradient, final_insertion_force, peak_1_location, peak_1_height, peak_2_location, peak_2_height = calculate_force_metrics(displacement, force)
+                X, y_pred, gradient, final_insertion_force, peak_1_location, peak_1_height, peak_2_location, peak_2_height = calculate_force_metrics(displacement, force, DISTANCE_HEIGHT_PROMINENCE)
             else:
                 final_insertion_force, peak_1_location, peak_1_height, peak_2_location, peak_2_height = calculate_torque_metrics(displacement, force)
                 gradient = np.nan

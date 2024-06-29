@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from PyQt6.QtWidgets import QApplication
-from plotLib import (FORCE_PROPERTY_ARRAY, get_folder_listing, separate_needles_dialog, get_sample_names_dialog, get_force_name_dialog, calculate_metrics_dialog, plot_config, save_figure_dialog, config_plot_legend, get_files, get_metadata, load_and_process_data, get_color_from_palette, calculate_force_metrics, calculate_torque_metrics, calculate_mean_data_for_plot, trim_and_average_regression_data, filter_and_average_sample_data, filter_and_average_peak_data, plot_peaks, plot_regression, plot_shaded_error, save_figure, save_metric_means, print_files)
+from plotLib import (FORCE_PROPERTY_ARRAY, get_folder_listing, separate_needles_dialog, get_sample_names_dialog, get_force_name_dialog, calculate_metrics_dialog, plot_config, save_figure_dialog, config_plot_legend, get_files, get_metadata, load_and_process_data, get_color_from_palette, calculate_force_metrics, calculate_torque_metrics, calculate_mean_data_for_plot, trim_and_average_regression_data, filter_and_average_sample_data, filter_and_average_peak_data, arrange_sample_data, plot_peaks, plot_regression, plot_shaded_error, save_figure, save_metric_means, print_files)
 
 DATA_DIRECTORY = "C:\\Users\\menwst\\Documents\\Python\\NeedleInsertionApp\\output"
 FIGURE_SIZE = (10, 6)
@@ -70,8 +70,7 @@ def main():
                 final_insertion_force, peak_1_index, peak_1_height, peak_2_index, peak_2_height = calculate_torque_metrics(mean_displacement, mean_force)
                 gradient = np.nan
 
-            mean_sample_data = (gradient, final_insertion_force, mean_displacement[peak_1_index] if not np.isnan(peak_1_index) else np.nan, peak_1_height, mean_displacement[peak_2_index] if not np.isnan(peak_2_index) else np.nan, peak_2_height)
-            std_sample_data = (np.nan, std_force[np.argmax(mean_displacement)], np.nan, std_force[peak_1_index] if not np.isnan(peak_1_index) else np.nan, np.nan, std_force[peak_2_index] if not np.isnan(peak_2_index) else np.nan)
+            mean_sample_data, std_sample_data = arrange_sample_data(mean_displacement, std_force, gradient, final_insertion_force, peak_1_index, peak_1_height, peak_2_index, peak_2_height)
             '''End of metrics calculation'''
 
             all_mean_sample_data.append(mean_sample_data)
