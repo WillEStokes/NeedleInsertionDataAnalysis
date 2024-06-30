@@ -230,42 +230,31 @@ def save_metric_means(sample_names, force_name, mean_sample_data, std_sample_dat
     """Save calculated metrics to a CSV file."""
     save_path = "metrics"
     os.makedirs(save_path, exist_ok=True)
+
     if force_name.startswith('f'):
-        metrics = pd.DataFrame({
-            'Sample': [sample.split('_')[0] for sample in sample_names],
-            'Velocity (mm/s)': [sample.split('_')[1] for sample in sample_names],
-            'Angle (degrees)': [sample.split('_')[2] for sample in sample_names],
-            'Needle': [sample.split('_')[3] if len(sample.split('_')) > 3 else '' for sample in sample_names],
-            'Mean Gradient (N/mm)': [sample_data[0] for sample_data in mean_sample_data],
-            'Std Gradient (N/mm)': [sample_data[0] for sample_data in std_sample_data],
-            'Mean Final Insertion Force (N)': [sample_data[1] for sample_data in mean_sample_data],
-            'Std Final Insertion Force (N)': [sample_data[1] for sample_data in std_sample_data],
-            'Mean Peak 1 Location (mm)': [sample_data[2] for sample_data in mean_sample_data],
-            'Std Peak 1 Location (mm)': [sample_data[2] for sample_data in std_sample_data],
-            'Mean Peak 1 Height (N)': [sample_data[3] for sample_data in mean_sample_data],
-            'Std Peak 1 Height (N)': [sample_data[3] for sample_data in std_sample_data],
-            'Mean Peak 2 Location (mm)': [sample_data[4] for sample_data in mean_sample_data],
-            'Std Peak 2 Location (mm)': [sample_data[4] for sample_data in std_sample_data],
-            'Mean Peak 2 Height (N)': [sample_data[5] for sample_data in mean_sample_data],
-            'Std Peak 2 Height (N)': [sample_data[5] for sample_data in std_sample_data]
-        })
+        headers = ['Mean Gradient', 'Std Gradient', 'Mean Final Insertion Force (N)', 'Std Final Insertion Force (N)', 'Mean Peak 1 Location (mm)', 'Std Peak 1 Location (mm)', 'Mean Peak 1 Height (N)', 'Std Peak 1 Height (N)', 'Mean Peak 2 Location (mm)', 'Std Peak 2 Location (mm)', 'Mean Peak 2 Height (N)', 'Std Peak 2 Height (N)']
     else:
-        metrics = pd.DataFrame({
-            'Sample': [sample.split('_')[0] for sample in sample_names],
-            'Velocity (mm/s)': [sample.split('_')[1] for sample in sample_names],
-            'Angle (degrees)': [sample.split('_')[2] for sample in sample_names],
-            'Needle': [sample.split('_')[3] if len(sample.split('_')) > 3 else '' for sample in sample_names],
-            'Mean Final Insertion Torque (Nmm)': [sample_data[1] for sample_data in mean_sample_data],
-            'Std Final Insertion Torque (Nmm)': [sample_data[1] for sample_data in std_sample_data],
-            'Mean Peak 1 Location (mm)': [sample_data[2] for sample_data in mean_sample_data],
-            'Std Peak 1 Location (mm)': [sample_data[2] for sample_data in std_sample_data],
-            'Mean Peak 1 Height (Nmm)': [sample_data[3] for sample_data in mean_sample_data],
-            'Std Peak 1 Height (Nmm)': [sample_data[3] for sample_data in std_sample_data],
-            'Mean Peak 2 Location (mm)': [sample_data[4] for sample_data in mean_sample_data],
-            'Std Peak 2 Location (mm)': [sample_data[4] for sample_data in std_sample_data],
-            'Mean Peak 2 Height (Nmm)': [sample_data[5] for sample_data in mean_sample_data],
-            'Std Peak 2 Height (Nmm)': [sample_data[5] for sample_data in std_sample_data]
-        })
+        headers = ['Mean Final Insertion Torque (Nmm)', 'Std Final Insertion Torque (Nmm)', 'Mean Peak 1 Location (mm)', 'Std Peak 1 Location (mm)', 'Mean Peak 1 Height (Nmm)', 'Std Peak 1 Height (Nmm)', 'Mean Peak 2 Location (mm)', 'Std Peak 2 Location (mm)', 'Mean Peak 2 Height (Nmm)', 'Std Peak 2 Height (Nmm)']
+
+    metrics = pd.DataFrame({
+        'Sample': [sample.split('_')[0] for sample in sample_names],
+        'Velocity (mm/s)': [sample.split('_')[1] for sample in sample_names],
+        'Angle (degrees)': [sample.split('_')[2] for sample in sample_names],
+        'Needle': [sample.split('_')[3] if len(sample.split('_')) > 3 else '' for sample in sample_names],
+        headers[0]: [sample_data['Mean Gradient'] for sample_data in mean_sample_data],
+        headers[1]: [sample_data['Std Gradient'] for sample_data in std_sample_data],
+        headers[2]: [sample_data['Mean Final Insertion Force'] for sample_data in mean_sample_data],
+        headers[3]: [sample_data['Std Final Insertion Force'] for sample_data in std_sample_data],
+        headers[4]: [sample_data['Mean Peak 1 Location'] for sample_data in mean_sample_data],
+        headers[5]: [sample_data['Std Peak 1 Location'] for sample_data in std_sample_data],
+        headers[6]: [sample_data['Mean Peak 1 Height'] for sample_data in mean_sample_data],
+        headers[7]: [sample_data['Std Peak 1 Height'] for sample_data in std_sample_data],
+        headers[8]: [sample_data['Mean Peak 2 Location'] for sample_data in mean_sample_data],
+        headers[9]: [sample_data['Std Peak 2 Location'] for sample_data in std_sample_data],
+        headers[10]: [sample_data['Mean Peak 2 Height'] for sample_data in mean_sample_data],
+        headers[11]: [sample_data['Std Peak 2 Height'] for sample_data in std_sample_data]
+    })
+    
     sample_names_str = " ".join(sample_names)
     metrics_name = os.path.join(save_path, f"{sample_names_str} {force_name} mean-metrics.csv")
     metrics.to_csv(metrics_name, index=False)
@@ -276,31 +265,25 @@ def save_metric_single_samples(files, sample_name, force_name, sample_data):
     sample_numbers = [os.path.basename(file_path).split('_')[4] for file_path in files]
     save_path = "metrics"
     os.makedirs(save_path, exist_ok=True)
+
     if force_name.startswith('f'):
-        metrics = pd.DataFrame({
-            'Sample': sample_numbers,
-            'Velocity (mm/s)': [sample_name.split('_')[1]] * len(sample_numbers),
-            'Angle (degrees)': [sample_name.split('_')[2]] * len(sample_numbers),
-            'Needle': [sample_name.split('_')[3]] * len(sample_numbers),
-            'Gradient (N/mm)': [sd[0] for sd in sample_data],
-            'Final Insertion Force (N)': [sd[1] for sd in sample_data],
-            'Peak 1 Location (mm)': [sd[2] for sd in sample_data],
-            'Peak 1 Height (N)': [sd[3] for sd in sample_data],
-            'Peak 2 Location (mm)': [sd[4] for sd in sample_data],
-            'Peak 2 Height (N)': [sd[5] for sd in sample_data]
-        })
+        headers = ['Gradient (N/mm)', 'Final Insertion Force (N)', 'Peak 1 Location (mm)', 'Peak 1 Height (N)', 'Peak 2 Location (mm)', 'Peak 2 Height (N)']
     else:
-        metrics = pd.DataFrame({
-            'Sample': sample_numbers,
-            'Velocity (mm/s)': [sample_name.split('_')[1]] * len(sample_numbers),
-            'Angle (degrees)': [sample_name.split('_')[2]] * len(sample_numbers),
-            'Needle': [sample_name.split('_')[3]] * len(sample_numbers),
-            'Final Insertion Torque (Nmm)': [sd[1] for sd in sample_data],
-            'Peak 1 Location (mm)': [sd[2] for sd in sample_data],
-            'Peak 1 Height (Nmm)': [sd[3] for sd in sample_data],
-            'Peak 2 Location (mm)': [sd[4] for sd in sample_data],
-            'Peak 2 Height (Nmm)': [sd[5] for sd in sample_data]
-        })
+        headers = ['Gradient (N/mm)', 'Final Insertion Torque (Nmm)', 'Peak 1 Location (mm)', 'Peak 1 Height (Nmm)', 'Peak 2 Location (mm)', 'Peak 2 Height (Nmm)']
+
+    metrics = pd.DataFrame({
+        'Sample': sample_numbers,
+        'Velocity (mm/s)': [sample_name.split('_')[1]] * len(sample_numbers),
+        'Angle (degrees)': [sample_name.split('_')[2]] * len(sample_numbers),
+        'Needle': [sample_name.split('_')[3]] * len(sample_numbers),
+        headers[0]: [sd[0] for sd in sample_data],
+        headers[1]: [sd[1] for sd in sample_data],
+        headers[2]: [sd[2] for sd in sample_data],
+        headers[3]: [sd[3] for sd in sample_data],
+        headers[4]: [sd[4] for sd in sample_data],
+        headers[5]: [sd[5] for sd in sample_data]
+    })
+
     metrics_name = os.path.join(save_path, f"{sample_name} {force_name} single-sample-metrics.csv")
     metrics.to_csv(metrics_name, index=False)
     print(f"Metrics saved as \"{metrics_name}\"")
@@ -334,16 +317,6 @@ def trim_and_average_regression_data(X, y_pred):
         return np.mean(X, axis=0), np.mean(y_pred, axis=0)
     return np.array([]), np.array([])
 
-def filter_and_average_sample_data(sample_data):
-    mean_row, std_row = [], []
-    for j in range(6):
-        valid_values = [sample_data[i][j] for i in range(len(sample_data)) if j < len(sample_data[i]) and not np.isnan(sample_data[i][j])]
-        mean_metric = np.mean(valid_values) if len(valid_values) > 0 else np.nan
-        std_metric = np.std(valid_values) if len(valid_values) > 0 else np.nan
-        mean_row.append(mean_metric)
-        std_row.append(std_metric)
-    return mean_row, std_row
-
 def filter_and_average_peak_data(sample_data):
     """Filter out NaN values from the peak data."""
     peak_1_locations = [sample_data[i][2] for i in range(len(sample_data)) if not np.isnan(sample_data[i][2])]
@@ -356,10 +329,32 @@ def filter_and_average_peak_data(sample_data):
     peak_2_height = np.mean(peak_2_heights) if len(peak_2_heights) > 0 else np.nan
     return peak_1_location, peak_1_height, peak_2_location, peak_2_height
 
-def arrange_sample_data(mean_displacement, std_force, gradient, final_insertion_force, peak_1_index, peak_1_height, peak_2_index, peak_2_height):
-    """Arrange the sample data into a mean tuple and a std tuple then return."""
-    mean_sample_data = (gradient, final_insertion_force, mean_displacement[peak_1_index] if not np.isnan(peak_1_index) else np.nan, peak_1_height, mean_displacement[peak_2_index] if not np.isnan(peak_2_index) else np.nan, peak_2_height)
-    std_sample_data = (np.nan, std_force[np.argmax(mean_displacement)], np.nan, std_force[peak_1_index] if not np.isnan(peak_1_index) else np.nan, np.nan, std_force[peak_2_index] if not np.isnan(peak_2_index) else np.nan)
+def filter_sample_data(sample_data):
+    array = []
+    for j in range(6):
+        valid_values = [sample_data[i][j] for i in range(len(sample_data)) if j < len(sample_data[i]) and not np.isnan(sample_data[i][j])]
+        valid_values = valid_values if len(valid_values) > 0 else np.nan
+        array.append(valid_values)
+    return array
+
+def average_and_arrange_sample_data(gradients, final_insertion_forces, peak_1_locations, peak_1_heights, peak_2_locations, peak_2_heights, std_final_insertion_force = None, std_peak_1_height = None, std_peak_2_height = None):
+    """Arrange the sample data into a dictionary with mean and std metrics and return."""
+    mean_sample_data = {
+        'Mean Gradient': np.mean(gradients) if len(gradients) > 0 else np.nan,
+        'Mean Final Insertion Force': np.mean(final_insertion_forces) if len(final_insertion_forces) > 0 else np.nan,
+        'Mean Peak 1 Location': np.mean(peak_1_locations) if len(peak_1_locations) > 0 else np.nan,
+        'Mean Peak 1 Height': np.mean(peak_1_heights) if len(peak_1_heights) > 0 else np.nan,
+        'Mean Peak 2 Location': np.mean(peak_2_locations) if len(peak_2_locations) > 0 else np.nan,
+        'Mean Peak 2 Height': np.mean(peak_2_heights) if len(peak_2_heights) > 0 else np.nan
+    }
+    std_sample_data = {
+        'Std Gradient': np.std(gradients) if len(gradients) > 1 else np.nan,
+        'Std Final Insertion Force': np.std(final_insertion_forces) if len(final_insertion_forces) > 1 else np.nan if std_final_insertion_force is None else std_final_insertion_force,
+        'Std Peak 1 Location': np.std(peak_1_locations) if len(peak_1_locations) > 1 else np.nan,
+        'Std Peak 1 Height': np.std(peak_1_heights) if len(peak_1_heights) > 1 else np.nan if std_peak_1_height is None else std_peak_1_height,
+        'Std Peak 2 Location': np.std(peak_2_locations) if len(peak_2_locations) > 1 else np.nan,
+        'Std Peak 2 Height': np.std(peak_2_heights) if len(peak_2_heights) > 1 else np.nan if std_peak_2_height is None else std_peak_2_height,
+    }
     return mean_sample_data, std_sample_data
 
 def calculate_mean_data_for_plot(displacements, forces):
