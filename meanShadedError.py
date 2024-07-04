@@ -2,15 +2,16 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from PyQt6.QtWidgets import QApplication
-from plotLib import (FORCE_PROPERTY_ARRAY, get_folder_listing, separate_needles_dialog, get_sample_names_dialog, get_force_name_dialog, calculate_metrics_dialog, plot_config, save_figure_dialog, config_plot_legend, get_files, get_metadata, load_and_process_data, get_color_from_palette, calculate_force_metrics, calculate_torque_metrics, calculate_mean_data_for_plot, trim_and_average_regression_data, filter_sample_data, average_and_arrange_sample_data, plot_peaks, plot_regression, plot_shaded_error, save_figure, save_metric_means, print_files)
+from plotLib import (FORCE_PROPERTY_ARRAY, get_folder_listing, separate_needles_dialog, get_sample_names_dialog, get_force_name_dialog, calculate_metrics_dialog, config_plot, save_figure_dialog, config_plot_legend, get_files, get_metadata, load_and_process_data, get_color_from_palette, calculate_force_metrics, calculate_torque_metrics, calculate_mean_data_for_plot, trim_and_average_regression_data, filter_sample_data, average_and_arrange_sample_data, plot_peaks, plot_regression, plot_shaded_error, save_figure, save_metric_means, print_files)
 
-DATA_DIRECTORY = "C:\\Users\\menwst\\Documents\\Python\\NeedleInsertionApp\\output"
-FIGURE_SIZE = (10, 6)
+DATA_DIRECTORY = "C:\\Users\\menwst\\Documents\\Python\\NeedleInsertionApp\\output\\novel needle"
+FIGURE_SIZE = (11, 6)
 X_LIMIT= (0, 25)
-LEGEND_POSITION = (1.4, 1)
-SUBPLOT_WIDTH = 0.7
-DISTANCE_HEIGHT_PROMINENCE = (100, 1.5, 0.5)
-# DISTANCE_HEIGHT_PROMINENCE = (100, 2, 0.05)
+LEGEND_POSITION = (1.75, 1)
+SUBPLOT_WIDTH = 0.6
+# DISTANCE_HEIGHT_PROMINENCE = (100, 1.5, 0.5)
+# DISTANCE_HEIGHT_PROMINENCE = (200, 0.5, 0.02)
+DISTANCE_HEIGHT_PROMINENCE = (300, 6, 0.1)
 
 '''Note: Y Limit is set in the FORCE_PROPERTY_ARRAY dictionary for consistency across all plots for each force component'''
 
@@ -29,7 +30,7 @@ def main():
     calculate_metrics_bool = calculate_metrics_dialog()
 
     force_properties = FORCE_PROPERTY_ARRAY[force_name]
-    plot_config(force_properties, FIGURE_SIZE, X_LIMIT)
+    config_plot(force_properties, FIGURE_SIZE, X_LIMIT)
 
     all_mean_sample_data, all_std_sample_data, all_files = [], [], []
     for sample_number, sample_name in enumerate(sample_names):
@@ -47,7 +48,7 @@ def main():
         if calculate_metrics_bool:
             all_X, all_y_pred, sample_data = [], [], []
             
-            '''Calculate metrics on each sample'''
+            '''Calculate metrics on each sample then compute the mean'''
             # for displacement, force in zip(displacements, forces):
             #     if force_name.startswith('f'):
             #         X, y_pred, gradient, final_insertion_force, peak_1_index, peak_1_height, peak_2_index, peak_2_height = calculate_force_metrics(displacement, force, DISTANCE_HEIGHT_PROMINENCE)
@@ -68,7 +69,7 @@ def main():
                 all_X.append(X)
                 all_y_pred.append(y_pred)
             else:
-                final_insertion_force, peak_1_index, peak_1_height, peak_2_index, peak_2_height = calculate_torque_metrics(mean_displacement, mean_force)
+                final_insertion_force, peak_1_index, peak_1_height, peak_2_index, peak_2_height = calculate_torque_metrics(mean_displacement, mean_force, DISTANCE_HEIGHT_PROMINENCE)
                 gradient = np.nan
 
             mean_sample_data, std_sample_data = average_and_arrange_sample_data([gradient], [final_insertion_force], [mean_displacement[peak_1_index]] if not np.isnan(peak_1_index) else [np.nan], [peak_1_height], [mean_displacement[peak_2_index]] if not np.isnan(peak_2_index) else [np.nan], [peak_2_height], std_force[np.argmax(mean_displacement)], std_force[peak_1_index] if not np.isnan(peak_1_index) else np.nan, std_force[peak_2_index] if not np.isnan(peak_2_index) else np.nan)

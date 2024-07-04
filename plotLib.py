@@ -13,9 +13,9 @@ from PyQt6.QtWidgets import QInputDialog, QMessageBox
 FORCE_PROPERTY_ARRAY = {
     'fx': {'title': 'Force-Displacement Plot (Fx)', 'ylim': (-1, 1), 'ylabel': 'Force (N)', 'smooth_elements': 10, 'negate': False},
     'fy': {'title': 'Force-Displacement Plot (Fy)', 'ylim': (-1, 1), 'ylabel': 'Force (N)', 'smooth_elements': 10, 'negate': False},
-    'fz': {'title': 'Force-Displacement Plot (Fz)', 'ylim': (-2.5, 6), 'ylabel': 'Force (N)', 'smooth_elements': 10, 'negate': False},
+    'fz': {'title': 'Force-Displacement Plot (Fz)', 'ylim': (-3, 9), 'ylabel': 'Force (N)', 'smooth_elements': 10, 'negate': False},
     'tx': {'title': 'Torque-Displacement Plot (Tx)', 'ylim': (-2, 14), 'ylabel': 'Torque (Nmm)', 'smooth_elements': 25, 'negate': False},
-    'ty': {'title': 'Torque-Displacement Plot (Ty)', 'ylim': (-10, 50), 'ylabel': 'Torque (Nmm)', 'smooth_elements': 25, 'negate': False},
+    'ty': {'title': 'Torque-Displacement Plot (Ty)', 'ylim': (-5, 25), 'ylabel': 'Torque (Nmm)', 'smooth_elements': 25, 'negate': False},
     'tz': {'title': 'Torque-Displacement Plot (Tz)', 'ylim': (-2, 14), 'ylabel': 'Torque (Nmm)', 'smooth_elements': 25, 'negate': False}
 }
 
@@ -152,9 +152,12 @@ def get_final_insertion_value(displacement, force_smooth):
 def calculate_force_metrics(displacement, force_smooth, distance_height_prominence = (250, 1.5, 0.5)):
     """Calculate metrics from the force and displacement data."""
     max_displacement_index, final_insertion_force = get_final_insertion_value(displacement, force_smooth)
-    # peak_indices = find_insertion_peaks(force_smooth, max_displacement_index, distance=150, height=1.5, prominence=0.5)
     peak_indices = find_insertion_peaks(force_smooth, max_displacement_index, *distance_height_prominence)
     X, y_pred, gradient = linear_regression(displacement, force_smooth, peak_indices, 0.98)
+
+    '''Optionally define the second peak as the maximum force value'''
+    # peak_indices = [peak_indices[0] if len(peak_indices) > 0 else np.nan, np.argmax(force_smooth[:max_displacement_index][~np.isnan(force_smooth[:max_displacement_index])])]
+    '''End of second peak definition'''
 
     print(f"Peaks found at indices: {peak_indices}")
 
@@ -199,7 +202,7 @@ def plot_regression(X, y_pred, color):
     """Plot the linear regression line."""
     plt.plot(X, y_pred, linestyle='--', color=color)
 
-def plot_config(force_properties, fig_size, x_lim):
+def config_plot(force_properties, fig_size, x_lim):
     """Configure the plot settings."""
     sns.set_theme(style="whitegrid")
     plt.figure(figsize=fig_size)
@@ -234,7 +237,7 @@ def save_metric_means(sample_names, force_name, mean_sample_data, std_sample_dat
     if force_name.startswith('f'):
         headers = ['Mean Gradient', 'Std Gradient', 'Mean Final Insertion Force (N)', 'Std Final Insertion Force (N)', 'Mean Peak 1 Location (mm)', 'Std Peak 1 Location (mm)', 'Mean Peak 1 Height (N)', 'Std Peak 1 Height (N)', 'Mean Peak 2 Location (mm)', 'Std Peak 2 Location (mm)', 'Mean Peak 2 Height (N)', 'Std Peak 2 Height (N)']
     else:
-        headers = ['Mean Final Insertion Torque (Nmm)', 'Std Final Insertion Torque (Nmm)', 'Mean Peak 1 Location (mm)', 'Std Peak 1 Location (mm)', 'Mean Peak 1 Height (Nmm)', 'Std Peak 1 Height (Nmm)', 'Mean Peak 2 Location (mm)', 'Std Peak 2 Location (mm)', 'Mean Peak 2 Height (Nmm)', 'Std Peak 2 Height (Nmm)']
+        headers = ['Mean Gradient', 'Std Gradient', 'Mean Final Insertion Torque (Nmm)', 'Std Final Insertion Torque (Nmm)', 'Mean Peak 1 Location (mm)', 'Std Peak 1 Location (mm)', 'Mean Peak 1 Height (Nmm)', 'Std Peak 1 Height (Nmm)', 'Mean Peak 2 Location (mm)', 'Std Peak 2 Location (mm)', 'Mean Peak 2 Height (Nmm)', 'Std Peak 2 Height (Nmm)']
 
     metrics = pd.DataFrame({
         'Sample': [sample.split('_')[0] for sample in sample_names],

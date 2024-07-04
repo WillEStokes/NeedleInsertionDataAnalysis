@@ -2,9 +2,9 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from PyQt6.QtWidgets import QApplication
-from plotLib import (FORCE_PROPERTY_ARRAY, get_folder_listing, get_sample_names_dialog, get_force_name_dialog, calculate_metrics_dialog, save_figure_dialog, plot_config, config_plot_legend, get_files, load_and_process_data_frames, get_color_from_palette, calculate_force_metrics, calculate_torque_metrics, plot_peaks, plot_regression, plot_line, save_figure, save_metric_single_samples)
+from plotLib import (FORCE_PROPERTY_ARRAY, get_folder_listing, get_sample_names_dialog, get_force_name_dialog, calculate_metrics_dialog, save_figure_dialog, config_plot, config_plot_legend, get_files, load_and_process_data_frames, get_color_from_palette, calculate_force_metrics, calculate_torque_metrics, plot_peaks, plot_regression, plot_line, save_figure, save_metric_single_samples)
 
-DATA_DIRECTORY = "C:\\Users\\menwst\\Documents\\Python\\NeedleInsertionApp\\output"
+DATA_DIRECTORY = "C:\\Users\\menwst\\Documents\\Python\\NeedleInsertionApp\\output\\control needle"
 FIGURE_SIZE = (10, 6)
 X_LIMIT = (0, 25)
 LEGEND_POSITION = (1.6, 1)
@@ -30,7 +30,7 @@ def main():
     print(f"Processing {sample_name}...")
 
     force_properties = FORCE_PROPERTY_ARRAY[force_name]
-    plot_config(force_properties, FIGURE_SIZE, X_LIMIT)
+    config_plot(force_properties, FIGURE_SIZE, X_LIMIT)
 
     files = get_files(DATA_DIRECTORY, sample_name)
 
@@ -54,7 +54,7 @@ def main():
                 final_insertion_force, peak_1_location, peak_1_height, peak_2_location, peak_2_height = calculate_torque_metrics(displacement, force)
                 gradient = np.nan
             
-            plot_peaks(peak_1_location, peak_1_height, peak_2_location, peak_2_height)
+            plot_peaks(peak_1_location, peak_1_height, peak_2_location, peak_2_height, force_name)
             if force_name.startswith('f'):
                 plot_regression(X, y_pred, color)
 
