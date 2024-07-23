@@ -24,7 +24,11 @@ def get_paired_t_test_annotations(data, y_name, pairs, sample_sizes):
         t_stat = (mean2 - mean1) / se_diff
         df = n1 + n2 - 2
         p_value = stats.t.sf(np.abs(t_stat), df) * 2
-        if p_value < 0.05:
+        if p_value < 0.001:
+            annotations.append('***')
+        elif p_value < 0.01:
+            annotations.append('**')
+        elif p_value < 0.05:
             annotations.append('*')
         else:
             annotations.append('ns')
